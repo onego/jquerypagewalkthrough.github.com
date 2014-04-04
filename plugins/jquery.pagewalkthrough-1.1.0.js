@@ -8,7 +8,7 @@
 
 ;(function ($, window, document, undefined) {
 
-	/**
+  /**
     * GLOBAR VAR
     */
     var _globalWalkthrough = {},
@@ -181,6 +181,9 @@
                 if (!onAfterShow()) return;
             }
 
+            if (_index == 0) {
+              if(!onEnter(null))return;
+            }
         },
 
         next: function (e) {
@@ -262,7 +265,7 @@
                 marginRight = cssSyntax(opt.steps[_index].margin, 'right'),
                 marginBottom = cssSyntax(opt.steps[_index].margin, 'bottom'),
                 marginLeft = cssSyntax(opt.steps[_index].margin, 'left'),
-                roundedCorner = 30,
+                roundedCorner = opt.highlightedAreaPadding,
                 overlayClass = '',
                 killOverlay = '';
 
@@ -418,10 +421,10 @@
 
             $jpWalkthrough.appendTo('body').show();
 
-            if (opt.steps[_index].accessable) {
-                showTooltip(true);
+            if (opt.steps[_index].popup.type == 'tooltip-fixed') {
+              showTooltipFixedPosition((opt.steps[_index].accessable) ? true : false);
             } else {
-                showTooltip(false);
+              showTooltip((opt.steps[_index].accessable) ? true : false);
             }
 
 
@@ -510,7 +513,7 @@
 
         var tooltipWidth = (opt.steps[_index].popup.width == '') ? 300 : opt.steps[_index].popup.width,
             top, left, arrowTop, arrowLeft,
-            roundedCorner = 30,
+            roundedCorner = opt.highlightedAreaPadding,
             overlayHoleWidth = (isAccessable) ? ($('#topAccessable').innerWidth() + (roundedCorner * 2)) || ($('#topAccessable').width() + (roundedCorner * 2)) : $('#highlightedArea').innerWidth() || $('#highlightedArea').width(),
             overlayHoleHeight = (isAccessable) ? $('#middleAccessable').innerHeight() + (roundedCorner * 2) || $('#middleAccessable').height() + (roundedCorner * 2) : $('#highlightedArea').innerHeight() || $('#highlightedArea').height(),
             overlayHoleTop = (isAccessable) ? $('#topAccessable').offset().top : $('#highlightedArea').offset().top,
@@ -598,6 +601,115 @@
         $('#jpwTooltip span.' + opt.steps[_index].popup.position).css({ 'left': cleanValue(arrowLeft) });
 
         $jpwTooltip.css({ 'top': cleanValue(top), 'left': cleanValue(left) });
+        
+        $jpWalkthrough.show();
+    }
+    
+    /*
+    * SHOW TOOLTIP WITH FIXED POSITION (as modal, centered)
+    */
+    function showTooltipFixedPosition(isAccessable) {
+
+        var opt = _activeWalkthrough;
+
+        var tooltipWidth = (opt.steps[_index].popup.width == '') ? 300 : opt.steps[_index].popup.width,
+            top, left, arrowTop, arrowLeft,
+            roundedCorner = opt.highlightedAreaPadding,
+            overlayHoleWidth = (isAccessable) ? ($('#topAccessable').innerWidth() + (roundedCorner * 2)) || ($('#topAccessable').width() + (roundedCorner * 2)) : $('#highlightedArea').innerWidth() || $('#highlightedArea').width(),
+            overlayHoleHeight = (isAccessable) ? $('#middleAccessable').innerHeight() + (roundedCorner * 2) || $('#middleAccessable').height() + (roundedCorner * 2) : $('#highlightedArea').innerHeight() || $('#highlightedArea').height(),
+            overlayHoleTop = (isAccessable) ? $('#topAccessable').offset().top : $('#highlightedArea').offset().top,
+            overlayHoleLeft = (isAccessable) ? $('#topAccessable').offset().left : $('#highlightedArea').offset().left,
+            arrow = 40,
+            draggable = '';  
+
+        var textRotation = (opt.steps[_index].popup.contentRotation == undefined || parseInt(opt.steps[_index].popup.contentRotation) == 0) ? clearRotation() : setRotation(parseInt(opt.steps[_index].popup.contentRotation));
+
+
+        //delete jwOverlay if any
+        if ($('#jpwOverlay').length) {
+            $('#jpwOverlay').remove();
+        }
+
+        var tooltipSlide = $('<div id="tooltipTop">' +
+                                '<div id="topLeft"></div>' +
+                                '<div id="topRight"></div>' +
+                            '</div>' +
+
+                            '<div id="tooltipInner">' +
+                            '</div>' +
+
+                            '<div id="tooltipBottom">' +
+                                '<div id="bottomLeft"></div>' +
+                                '<div id="bottomRight"></div>' +
+                            '</div>');
+
+        $jpwTooltip.html('').css({ 'marginLeft': '0', 'margin-top': '0', 'position': 'absolute','z-index':'9999'})
+                           .append(tooltipSlide)
+                           .wrapInner('<div id="tooltipWrapper" style="width:'+cleanValue(parseInt(opt.steps[_index].popup.width) + 30)+'"></div>')
+                           .appendTo($jpWalkthrough);
+
+        if (opt.steps[_index].popup.draggable) {
+            $jpwTooltip.append('<div id="drag-area" class="draggable-area"></div>');
+        }        
+
+        $jpWalkthrough.appendTo('body').show();
+
+        $('#tooltipWrapper').css(textRotation);
+
+        $(opt.steps[_index].popup.content).clone().appendTo('#tooltipInner').show();
+
+        $jpwTooltip.append('<span class="' + opt.steps[_index].popup.position + '">&nbsp;</span>');
+
+        switch (opt.steps[_index].popup.position) {
+
+            case 'top':
+                top = overlayHoleTop - ($jpwTooltip.height() + (arrow / 2)) + parseInt(opt.steps[_index].popup.offsetVertical) - 86;
+                if (isAccessable) {
+                    left = (overlayHoleLeft + (overlayHoleWidth / 2)) - ($jpwTooltip.width() / 2) - 40 + parseInt(opt.steps[_index].popup.offsetHorizontal);
+                } else {
+                    left = (overlayHoleLeft + (overlayHoleWidth / 2)) - ($jpwTooltip.width() / 2) - 5 + parseInt(opt.steps[_index].popup.offsetHorizontal);
+                }
+                arrowLeft = ($jpwTooltip.width() / 2) - arrow;
+                arrowTop = '';
+                break;
+            case 'right':
+                top = overlayHoleTop - (arrow / 2) + parseInt(opt.steps[_index].popup.offsetVertical);
+                left = overlayHoleLeft + overlayHoleWidth + (arrow / 2) + parseInt(opt.steps[_index].popup.offsetHorizontal) + 105;
+                arrowTop = arrow;
+                arrowLeft = '';
+                break;
+            case 'bottom':
+
+                if (isAccessable) {
+                    top = (overlayHoleTop + overlayHoleHeight) + parseInt(opt.steps[_index].popup.offsetVertical) + 86;
+                    left = (overlayHoleLeft + (overlayHoleWidth / 2)) - ($jpwTooltip.width() / 2) - 40 + parseInt(opt.steps[_index].popup.offsetHorizontal);
+                } else {
+                    top = overlayHoleTop + overlayHoleHeight + parseInt(opt.steps[_index].popup.offsetVertical) + 86;
+                    left = (overlayHoleLeft + (overlayHoleWidth / 2)) - ($jpwTooltip.width() / 2) - 5 + parseInt(opt.steps[_index].popup.offsetHorizontal);
+                }
+
+                arrowLeft = ($jpwTooltip.width() / 2) - arrow;
+                arrowTop = '';
+                break;
+            case 'left':
+                top = overlayHoleTop - (arrow / 2) + parseInt(opt.steps[_index].popup.offsetVertical);
+                left = overlayHoleLeft - $jpwTooltip.width() - (arrow) + parseInt(opt.steps[_index].popup.offsetHorizontal) - 105;
+                arrowTop = arrow;
+                arrowLeft = '';
+                break;
+        }
+
+        $('#jpwTooltip span.' + opt.steps[_index].popup.position).css({ 'left': cleanValue(arrowLeft) });
+
+        // custom arrow rotation
+        $('#jpwTooltip span.' + opt.steps[_index].popup.position).css((parseInt(opt.steps[_index].popup.arrowRotation) == 0) ? clearRotation() : setRotation(parseInt(opt.steps[_index].popup.arrowRotation)));
+        // additional arrow styling
+        if (opt.steps[_index].popup.arrowPosition) $('#jpwTooltip span.' + opt.steps[_index].popup.position).css(opt.steps[_index].popup.arrowPosition);
+
+        // fixed horizontal, dynamic vertical
+        $jpwTooltip.css({ 'top': cleanValue(top), 'left': '50%', 'margin-left': -(parseInt(opt.steps[_index].popup.width) + 60) / 2 + 'px'});
+        
+        
         $jpWalkthrough.show();
     }
 
@@ -725,8 +837,11 @@
      * SHOW CLOSE BUTTON
      */
      function showCloseButton(){
+       
+       var options = _activeWalkthrough;
+       
         if(!$('jpwClose').length){
-            $('body').append('<div id="jpwClose"><a href="javascript:;" title="Click here to close"><span></span><br>Click Here to Close</a></div>');
+            $('body').append('<div id="jpwClose"><a href="javascript:;" title="Click here to close">' + (options.closeButton ? options.closeButton : '<span></span><br>Click Here to Close') + '</a></div>');
         }
      }
 
@@ -841,7 +956,7 @@
 
 
 
-	/**
+  /**
     * HELPERS
     */
 
@@ -1055,7 +1170,7 @@
 
 
 
-	/**
+  /**
     * MAIN PLUGIN
     */
     $.pagewalkthrough = $.fn.pagewalkthrough = function (method) {
@@ -1077,44 +1192,46 @@
     }
 
     setTimeout(function () {
-        methods.renderOverlay();
+        // Sometimes we don't have ANY steps in DOM on window.load. So nothing to render.
+        if (typeof _activeWalkthrough !== 'undefined') methods.renderOverlay();
     }, 500);
 
-	$.fn.pagewalkthrough.options = {
+  $.fn.pagewalkthrough.options = {
 
-		steps: [
-
-			{
-               wrapper: '', //an ID of page element HTML that you want to highlight
-               margin: 0, //margin for highlighted area, may use CSS syntax i,e: '10px 20px 5px 30px'
-               popup:
-               {
-					content: '', //ID content of the walkthrough
-					type: 'modal', //tooltip, modal, nohighlight
-                    position:'top',//position for tooltip and nohighlight type only: top, right, bottom, left
-					offsetHorizontal: 0, //horizontal offset for the walkthrough
-					offsetVertical: 0, //vertical offset for the walkthrough
-					width: '320', //default width for each step,
-					draggable: false, // set true to set walkthrough draggable,
-					contentRotation: 0 //content rotation : i.e: 0, 90, 180, 270 or whatever value you add. minus sign (-) will be CCW direction
-               },
-               overlay:true,             
-               accessable: false, //if true - you can access html element such as form input field, button etc
-               autoScroll: true, //is true - this will autoscroll to the arror/content every step 
-               scrollSpeed: 1000, //scroll speed
-               stayFocus: false, //if true - when user scroll down/up to the page, it will scroll back the position it belongs
-               onLeave: null, // callback when leaving the step
-               onEnter: null // callback when entering the step
-           }
-
-		],
-        name: '',
-		onLoad: true, //load the walkthrough at first time page loaded
-		onBeforeShow: null, //callback before page walkthrough loaded
-		onAfterShow: null, // callback after page walkthrough loaded
-		onRestart: null, //callback for onRestart walkthrough
-		onClose: null, //callback page walkthrough closed
-		onCookieLoad: null //when walkthrough closed, it will set cookie and use callback if you want to create link to trigger to reopen the walkthrough
-	};
+    steps: [
+      {
+        wrapper: '', //an ID of page element HTML that you want to highlight
+        margin: 0, //margin for highlighted area, may use CSS syntax i,e: '10px 20px 5px 30px'
+        popup: {
+          content: '', //ID content of the walkthrough
+          type: 'modal', //tooltip, tooltip-fixed, modal, nohighlight
+          position:'top',//position for tooltip and nohighlight type only: top, right, bottom, left
+          offsetHorizontal: 0, //horizontal offset for the walkthrough
+          offsetVertical: 0, //vertical offset for the walkthrough
+          width: '320', //default width for each step,
+          draggable: false, // set true to set walkthrough draggable,
+          contentRotation: 0, //content rotation : i.e: 0, 90, 180, 270 or whatever value you add. minus sign (-) will be CCW direction
+          arrowRotation: 0, // custom arrow rotation if needed (for "tooltip-fixed"; works as contentRotation, but for arrow only)
+          arrowPosition: null // custom arrow positioning if needed (for "tooltip-fixed"; css object, i.e.: { left: 0 })
+        },
+        overlay:true,             
+        accessable: false, //if true - you can access html element such as form input field, button etc
+        autoScroll: true, //is true - this will autoscroll to the arror/content every step 
+        scrollSpeed: 1000, //scroll speed
+        stayFocus: false, //if true - when user scroll down/up to the page, it will scroll back the position it belongs
+        onLeave: null, // callback when leaving the step
+        onEnter: null // callback when entering the step
+      }
+    ],
+    name: '',
+    closeButton: '',
+    highlightedAreaPadding: 30,
+    onLoad: true, //load the walkthrough at first time page loaded
+    onBeforeShow: null, //callback before page walkthrough loaded
+    onAfterShow: null, // callback after page walkthrough loaded
+    onRestart: null, //callback for onRestart walkthrough
+    onClose: null, //callback page walkthrough closed
+    onCookieLoad: null //when walkthrough closed, it will set cookie and use callback if you want to create link to trigger to reopen the walkthrough
+  };
 
 } (jQuery, window, document));
